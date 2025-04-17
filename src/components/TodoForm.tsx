@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
-import './TodoForm.css';
+import React, { useState } from "react";
+import "./TodoForm.css";
 
 interface TodoFormProps {
   addTodo: (text: string) => void;
 }
 
 const TodoForm: React.FC<TodoFormProps> = ({ addTodo }) => {
-  const [text, setText] = useState('');
+  const [text, setText] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (text.trim()) {
-      addTodo(text);
-      setText('');
+      addTodo(text); // Pass the input text to addTodo
+      setText(""); // Clear the input field after adding the task
+    } else {
+      alert("Task description cannot be empty!"); // Alert for empty input
     }
   };
 
@@ -22,12 +24,14 @@ const TodoForm: React.FC<TodoFormProps> = ({ addTodo }) => {
         type="text"
         className="todo-input"
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={(e) => setText(e.target.value)} // Update the text as user types
         placeholder="Add a new todo..."
       />
-      <button type="submit">Add</button>
+      <button type="submit" disabled={!text.trim()}>
+        Add
+      </button>{" "}
+      {/* Disable the button if input is empty */}
     </form>
   );
 };
-
-export default TodoForm; 
+export default TodoForm;
