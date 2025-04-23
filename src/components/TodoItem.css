@@ -2,15 +2,24 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 15px;
-  background-color: #f8f8f8;
-  border-radius: 4px;
-  margin-bottom: 10px;
-  transition: background-color 0.3s;
+  padding: 14px 16px;
+  background-color: #2a2a2a;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+  border: 1px solid #444;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 }
 
 .todo-item:hover {
-  background-color: #f1f1f1;
+  background-color: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.todo-item.completed {
+  background-color: #263326;
+  border-color: #2d4c2d;
 }
 
 .todo-item.completed .todo-text {
@@ -18,24 +27,106 @@
   color: #888;
 }
 
+/* Priority styles */
+.todo-item.priority {
+  background-color: #332d24;
+  border-color: #665a44;
+  border-left: 4px solid #ffc107;
+}
+
+.todo-item.priority:hover {
+  background-color: #3a342a;
+}
+
 .todo-content {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   flex: 1;
   min-width: 0;
   margin-right: 10px;
 }
 
+.todo-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
 .todo-content input[type="checkbox"] {
-  margin-right: 10px;
+  margin-right: 12px;
   cursor: pointer;
   flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  accent-color: #0066cc;
+  margin-top: 4px;
 }
 
 .todo-text {
   font-size: 16px;
   word-break: break-word;
-  color: #333;
+  color: #e0e0e0;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-weight: 400;
+  margin-bottom: 4px;
+}
+
+.todo-due {
+  font-size: 0.8rem;
+  color: #aaa;
+  margin-top: 2px;
+}
+
+.todo-due-date {
+  display: inline-block;
+  padding: 2px 6px;
+  background-color: rgba(0, 102, 204, 0.2);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 102, 204, 0.3);
+}
+
+.todo-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* Priority button styles */
+.priority-btn {
+  background-color: #555;
+  color: #ddd;
+  font-weight: bold;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.priority-btn:hover {
+  background-color: #666;
+}
+
+.priority-btn.active {
+  background-color: #ffc107;
+  color: #333;
+  box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+}
+
+.priority-btn.active:hover {
+  background-color: #e6af00;
+}
+
+button.edit {
+  background-color: #0066cc;
+  color: white;
+  padding: 6px 12px;
+}
+
+button.edit:hover {
+  background-color: #0055aa;
 } 
