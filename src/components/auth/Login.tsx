@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './AuthForms.css';
+import { authApi } from '../../services/auth';
 
 interface LoginProps {
   onLogin: (userData: { name: string; email: string; token: string }) => void;
@@ -27,19 +28,8 @@ const Login = ({ onLogin }: LoginProps) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://localhost:5002/api/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Invalid credentials');
-      }
+      // Use auth service instead of direct fetch
+      const data = await authApi.login(email, password);
       
       // Save to local storage
       localStorage.setItem('userInfo', JSON.stringify(data));

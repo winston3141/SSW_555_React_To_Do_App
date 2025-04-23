@@ -9,9 +9,10 @@ import Register from './components/auth/Register'
 import Login from './components/auth/Login'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import { AuthProvider, AuthContext } from './context/AuthContext'
+import { todoApi } from './services/api'
 
 export interface Todo {
-  id: number;
+  id: string | number;
   text: string;
   completed: boolean;
   dueDate?: string; // Optional date in ISO format
@@ -21,147 +22,190 @@ export interface Todo {
 }
 
 export interface TodoListType {
-  id: number;
+  id: string | number;
   name: string;
   todos: Todo[];
 }
 
 const AppContent = () => {
   const [todoLists, setTodoLists] = useState<TodoListType[]>([])
-  const [currentListId, setCurrentListId] = useState<number>(0)
-  const { user, isAuthenticated, login } = useContext(AuthContext)
+  const [currentListId, setCurrentListId] = useState<string | number>(0)
+  const [loading, setLoading] = useState<boolean>(true)
+  const { user, isAuthenticated, login, logout } = useContext(AuthContext)
 
-  // Initialize with a default to-do list if none exists
+  // Fetch todo lists from API when authenticated
   useEffect(() => {
-    if (isAuthenticated && todoLists.length === 0) {
-      const defaultList = {
-        id: Date.now(),
-        name: 'Main List',
-        todos: []
+    const fetchTodos = async () => {
+      if (isAuthenticated) {
+        setLoading(true)
+        try {
+          const lists = await todoApi.getTodoLists()
+          if (lists.length > 0) {
+            setTodoLists(lists)
+            setCurrentListId(lists[0].id)
+          } else {
+            // Create a default list if none exists
+            const defaultList = await todoApi.createTodoList('Main List')
+            if (defaultList) {
+              setTodoLists([defaultList])
+              setCurrentListId(defaultList.id)
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching todos:', error)
+        } finally {
+          setLoading(false)
+        }
       }
-      setTodoLists([defaultList])
-      setCurrentListId(defaultList.id)
     }
-  }, [isAuthenticated, todoLists.length])
+
+    if (isAuthenticated) {
+      fetchTodos()
+    }
+  }, [isAuthenticated])
 
   const getCurrentList = () => {
     return todoLists.find(list => list.id === currentListId) || todoLists[0]
   }
 
-  const addTodo = (text: string) => {
-    if (text.trim()) {
-      const newTodo: Todo = {
-        id: Date.now(),
-        text,
-        completed: false,
-        dueDate: undefined,
-        dueTime: undefined,
-        priority: false,
-        priorityTimestamp: undefined
+  const addTodo = async (text: string) => {
+    if (text.trim() && currentListId) {
+      try {
+        const listId = String(currentListId)
+        const updatedList = await todoApi.addTodoItem(listId, text)
+        
+        if (updatedList) {
+          setTodoLists(currentLists => 
+            currentLists.map(list => 
+              list.id === currentListId ? updatedList : list
+            )
+          )
+        }
+      } catch (error) {
+        console.error('Error adding todo:', error)
       }
+    }
+  }
+
+  const toggleTodo = async (id: string | number) => {
+    const currentList = getCurrentList()
+    if (!currentList) return
+    
+    const todo = currentList.todos.find(t => t.id === id)
+    if (!todo) return
+    
+    try {
+      const listId = String(currentList.id)
+      const itemId = String(id)
+      const updatedList = await todoApi.updateTodoItem(listId, itemId, {
+        completed: !todo.completed
+      })
       
-      setTodoLists(currentLists => 
-        currentLists.map(list => 
-          list.id === currentListId 
-            ? { ...list, todos: [...list.todos, newTodo] } 
-            : list
+      if (updatedList) {
+        setTodoLists(currentLists => 
+          currentLists.map(list => 
+            list.id === currentListId ? updatedList : list
+          )
         )
-      )
+      }
+    } catch (error) {
+      console.error('Error toggling todo:', error)
     }
   }
 
-  const toggleTodo = (id: number) => {
-    setTodoLists(currentLists => 
-      currentLists.map(list => 
-        list.id === currentListId
-          ? {
-              ...list, 
-              todos: list.todos.map(todo => 
-                todo.id === id 
-                  ? { ...todo, completed: !todo.completed } 
-                  : todo
-              )
-            }
-          : list
-      )
-    )
-  }
-
-  const deleteTodo = (id: number) => {
-    setTodoLists(currentLists => 
-      currentLists.map(list => 
-        list.id === currentListId
-          ? {
-              ...list, 
-              todos: list.todos.filter(todo => todo.id !== id)
-            }
-          : list
-      )
-    )
-  }
-
-  const updateTodoDateTime = (id: number, dueDate?: string, dueTime?: string) => {
-    setTodoLists(currentLists => 
-      currentLists.map(list => 
-        list.id === currentListId
-          ? {
-              ...list, 
-              todos: list.todos.map(todo => 
-                todo.id === id 
-                  ? { ...todo, dueDate, dueTime } 
-                  : todo
-              )
-            }
-          : list
-      )
-    )
-  }
-
-  const togglePriority = (id: number) => {
-    setTodoLists(currentLists => 
-      currentLists.map(list => 
-        list.id === currentListId
-          ? {
-              ...list, 
-              todos: list.todos.map(todo => 
-                todo.id === id 
-                  ? { 
-                      ...todo, 
-                      priority: !todo.priority,
-                      priorityTimestamp: !todo.priority ? Date.now() : undefined
-                    } 
-                  : todo
-              ).sort((a, b) => {
-                // Sort logic: prioritized tasks at top, most recently prioritized first
-                if (a.priority && !b.priority) return -1
-                if (!a.priority && b.priority) return 1
-                if (a.priority && b.priority) {
-                  // If both are prioritized, sort by priority timestamp (most recent first)
-                  return (b.priorityTimestamp || 0) - (a.priorityTimestamp || 0)
-                }
-                return 0
-              })
-            }
-          : list
-      )
-    )
-  }
-
-  const createTodoList = (name: string) => {
-    const newList = {
-      id: Date.now(),
-      name,
-      todos: []
+  const deleteTodo = async (id: string | number) => {
+    const currentList = getCurrentList()
+    if (!currentList) return
+    
+    try {
+      const listId = String(currentList.id)
+      const itemId = String(id)
+      const updatedList = await todoApi.deleteTodoItem(listId, itemId)
+      
+      if (updatedList) {
+        setTodoLists(currentLists => 
+          currentLists.map(list => 
+            list.id === currentListId ? updatedList : list
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Error deleting todo:', error)
     }
-    setTodoLists([...todoLists, newList])
-    setCurrentListId(newList.id)
   }
 
-  const selectTodoList = (id: number) => {
+  const updateTodoDateTime = async (id: string | number, dueDate?: string, dueTime?: string) => {
+    const currentList = getCurrentList()
+    if (!currentList) return
+    
+    try {
+      const listId = String(currentList.id)
+      const itemId = String(id)
+      const updatedList = await todoApi.updateTodoItem(listId, itemId, {
+        dueDate,
+        dueTime
+      })
+      
+      if (updatedList) {
+        setTodoLists(currentLists => 
+          currentLists.map(list => 
+            list.id === currentListId ? updatedList : list
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Error updating todo date/time:', error)
+    }
+  }
+
+  const togglePriority = async (id: string | number) => {
+    const currentList = getCurrentList()
+    if (!currentList) return
+    
+    const todo = currentList.todos.find(t => t.id === id)
+    if (!todo) return
+    
+    try {
+      const listId = String(currentList.id)
+      const itemId = String(id)
+      const updatedList = await todoApi.updateTodoItem(listId, itemId, {
+        priority: !todo.priority
+      })
+      
+      if (updatedList) {
+        setTodoLists(currentLists => 
+          currentLists.map(list => 
+            list.id === currentListId ? updatedList : list
+          )
+        )
+      }
+    } catch (error) {
+      console.error('Error toggling priority:', error)
+    }
+  }
+
+  const createTodoList = async (name: string) => {
+    try {
+      const newList = await todoApi.createTodoList(name)
+      if (newList) {
+        setTodoLists(currentLists => [...currentLists, newList])
+        setCurrentListId(newList.id)
+      }
+    } catch (error) {
+      console.error('Error creating todo list:', error)
+    }
+  }
+
+  const selectTodoList = (id: string | number) => {
     setCurrentListId(id)
   }
 
   const currentList = getCurrentList()
+
+  // Show loading state
+  if (loading && isAuthenticated) {
+    return <div className="loading">Loading...</div>
+  }
 
   return (
     <Routes>

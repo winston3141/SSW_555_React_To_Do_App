@@ -2,9 +2,9 @@ import { useState } from 'react';
 import './NavBar.css';
 
 interface NavBarProps {
-  todoLists: { id: number; name: string }[];
-  currentListId: number;
-  onSelectList: (id: number) => void;
+  todoLists: { id: string | number; name: string }[];
+  currentListId: string | number;
+  onSelectList: (id: string | number) => void;
   onCreateList: (name: string) => void;
 }
 

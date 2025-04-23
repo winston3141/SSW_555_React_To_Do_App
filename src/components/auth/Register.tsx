@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './AuthForms.css';
+import { authApi } from '../../services/auth';
 
 interface RegisterProps {
   onRegister: (userData: { name: string; email: string; token: string }) => void;
@@ -34,19 +35,8 @@ const Register = ({ onRegister }: RegisterProps) => {
     setIsLoading(true);
     
     try {
-      const response = await fetch('http://localhost:5002/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ name, email, password }),
-      });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
+      // Use auth service instead of direct fetch
+      const data = await authApi.register(name, email, password);
       
       // Save to local storage
       localStorage.setItem('userInfo', JSON.stringify(data));
